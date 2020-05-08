@@ -24,20 +24,29 @@ class Psalm extends AbstractExternalTask
         $resolver->setDefaults([
             'config' => null,
             'ignore_patterns' => [],
+            'output_format' => null,
             'no_cache' => false,
             'report' => null,
             'threads' => null,
             'triggered_by' => ['php'],
             'show_info' => false,
+            'phar' => false,
         ]);
 
         $resolver->addAllowedTypes('config', ['null', 'string']);
         $resolver->addAllowedTypes('ignore_patterns', ['array']);
+        $resolver->addAllowedTypes('output_format', ['null', 'string']);
         $resolver->addAllowedTypes('no_cache', ['bool']);
         $resolver->addAllowedTypes('report', ['null', 'string']);
         $resolver->addAllowedTypes('threads', ['null', 'int']);
         $resolver->addAllowedTypes('triggered_by', ['array']);
         $resolver->addAllowedTypes('show_info', ['bool']);
+        $resolver->addAllowedTypes('phar', ['bool']);
+
+        $resolver->setAllowedValues(
+            'output_format',
+            [null, 'compact', 'console', 'emacs', 'json', 'pylint', 'xml', 'checkstyle', 'junit', 'sonarqube']
+        );
 
         return $resolver;
     }
@@ -60,7 +69,10 @@ class Psalm extends AbstractExternalTask
             return TaskResult::createSkipped($this, $context);
         }
 
-        $arguments = $this->processBuilder->createArgumentsForCommand('psalm');
+        $command = $config['phar'] ? 'psalm.phar' : 'psalm';
+
+        $arguments = $this->processBuilder->createArgumentsForCommand($command);
+        $arguments->addOptionalArgument('--output-format=%s', $config['output_format']);
         $arguments->addOptionalArgument('--config=%s', $config['config']);
         $arguments->addOptionalArgument('--report=%s', $config['report']);
         $arguments->addOptionalArgument('--no-cache', $config['no_cache']);
